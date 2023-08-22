@@ -1,0 +1,5 @@
+[task]
+name = "test"
+timeout = 10
+command.name = "echo"
+command.args = "hello, world!"
