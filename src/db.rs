@@ -16,7 +16,7 @@ impl MemDB {
         let shared = Arc::new(Shared {
             tasks: Mutex::new(Tasks {
                 entries: HashMap::new(),
-                expirations: Default::default(),
+                expirations: BTreeSet::default(),
             }),
             notify_task_runner: Notify::new(),
         });
@@ -30,7 +30,7 @@ impl MemDB {
     pub(crate) fn get_task(&self, name: &str) -> Result<Task, CWError> {
         // Acquire the lock, get the entry and clone the value.
         let state = self.shared.tasks.lock().unwrap();
-        match state.entries.get(name).map(|entry| entry.clone()) {
+        match state.entries.get(name).cloned() {
             Some(task) => return Ok(task),
             None => return Err(CWError::new("Not found", "No task found with this name")),
         }

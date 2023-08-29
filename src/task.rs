@@ -33,9 +33,6 @@ pub(crate) struct Task {
 
 impl Task {
     pub(crate) fn new(command: Arc<dyn Command + Send + Sync>, duration: Duration) -> Task {
-        //        if command != "echo" {
-        //            panic!("unknown action {}", command)
-        //        }
         Task {
             // Status
             status: Status::CountingDown,
@@ -52,8 +49,7 @@ impl Task {
     }
 
     pub(crate) fn reset(&mut self, duration: Duration) -> Result<(), CWError> {
-        let status = self.status.clone();
-        if status != Status::CountingDown {
+        if self.status != Status::CountingDown {
             return Err(CWError::new(
                 "Too late",
                 "You're too late, this clock has already reached zero. To re-arm, please restart the application.",
