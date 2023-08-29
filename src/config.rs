@@ -6,6 +6,13 @@ use toml::from_str;
 #[derive(Deserialize)]
 pub(crate) struct Config {
     pub task: Task,
+    pub auth: Auth,
+}
+
+#[derive(Deserialize)]
+pub struct Auth {
+    pub username: String,
+    pub password: String,
 }
 
 #[derive(Deserialize)]

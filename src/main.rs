@@ -1,5 +1,6 @@
 pub mod db;
 pub mod task;
+pub mod http;
 pub mod error;
 pub mod command;
 pub mod config;
@@ -7,6 +8,7 @@ pub mod config;
 use error::CWError;
 use task::Status;
 use command::echo::Echo;
+use http::{User, validate_credentials, bad_request,unauthorized,forbidden,not_found};
 
 #[macro_use]
 extern crate rocket;
@@ -19,7 +21,7 @@ use rocket::fs::{FileServer, relative};
 use rocket::serde::json::Json;
 use rocket::serde::Serialize;
 use rocket::State;
-
+use rocket_basicauth::BasicAuth;
 
 #[derive(Serialize)]
 pub struct JobStatus {
@@ -43,7 +45,9 @@ impl JobStatus {
 }
 
 #[get("/tasks/<name>/reset", format = "json")]
-fn reset_task(name: &str, db: &State<db::MemDB>) -> Result<Json<JobStatus>, CWError> {
+fn reset_task(auth: BasicAuth, name: &str, db: &State<db::MemDB>, user: &State<User>) -> Result<Json<JobStatus>, CWError> {
+    validate_credentials(auth, user.inner().clone())?;
+
     let duration = Duration::new(60, 0);
     db.rearm_task(name, duration)?;
     let task = db.get_task(name)?;
@@ -51,14 +55,11 @@ fn reset_task(name: &str, db: &State<db::MemDB>) -> Result<Json<JobStatus>, CWEr
 }
 
 #[get("/tasks/<name>", format = "json")]
-fn get_task(name: &str, db: &State<db::MemDB>) -> Result<Json<JobStatus>, CWError> {
+fn get_task(auth: BasicAuth, name: &str, db: &State<db::MemDB>, user: &State<User>) -> Result<Json<JobStatus>, CWError> {
+    validate_credentials(auth, user.inner().clone())?;
+
     let task = db.get_task(name)?;
     Ok(Json(JobStatus::from_task(name, task)))
-}
-
-#[catch(404)]
-fn not_found() -> Json<CWError> {
-    Json(CWError::new("error", "Resource was not found."))
 }
 
 #[rocket::main]
@@ -92,11 +93,17 @@ async fn main() -> Result<(), rocket::Error> {
         config.task.timeout,
     );
 
+    let user = User {
+        username: config.auth.username,
+        password: config.auth.password,
+    };
+
     let _rocket = rocket::build()
-        .register("/", catchers![not_found])
+        .register("/", catchers![bad_request,unauthorized,forbidden,not_found])
         .mount("/", FileServer::from(relative!("static")))
         .mount("/api", routes![get_task])
         .mount("/api", routes![reset_task])
+        .manage(user)
         .manage(db)
         .launch()
         .await?;

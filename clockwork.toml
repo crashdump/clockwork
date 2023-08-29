@@ -1,3 +1,7 @@
+[auth]
+username = "foo"
+password = "bar"
+
 [task]
 name = "test"
 timeout = 10

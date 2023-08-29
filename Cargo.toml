@@ -13,11 +13,11 @@ name = "clockwork"
 path = "src/main.rs"
 
 [dependencies]
-log = "0.4.20"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rocket = { version = "=0.5.0-rc.3", features = ["json"] }
-strum = "0.25.0"
-strum_macros = "0.25.2"
-toml = "0.7.6"
+strum = "0.25"
+strum_macros = "0.25"
+toml = "0.7"
+rocket-basicauth = "2"
