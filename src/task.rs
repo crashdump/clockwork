@@ -9,7 +9,7 @@ use crate::error::CWError;
 #[derive(Serialize, Display, Copy, Clone, PartialEq, EnumString, EnumVariantNames)]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
-pub enum Status {
+pub(crate) enum Status {
     CountingDown,
     ActionSuccessful,
     ActionFailed,
@@ -17,7 +17,7 @@ pub enum Status {
 
 impl Debug for Status {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
-        write!(f, "Status: {}", self.to_string())
+        write!(f, "Status: {}", self)
     }
 }
 
@@ -75,7 +75,7 @@ impl Task {
     }
 }
 
-pub trait Command {
+pub(crate) trait Command {
     fn run(&self) -> Result<String, String>;
     fn name(&self) -> &'static str;
 }

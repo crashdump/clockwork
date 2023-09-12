@@ -1,10 +1,10 @@
 use std::collections::{BTreeSet, HashMap};
 use std::sync::{Arc, Mutex};
 use tokio::sync::Notify;
-use tokio::time::{self, Instant, Duration};
+use tokio::time::{self, Duration, Instant};
 
 use crate::error::CWError;
-use crate::task::{Task, Command};
+use crate::task::{Command, Task};
 
 #[derive(Clone)]
 pub(crate) struct MemDB {
@@ -31,11 +31,10 @@ impl MemDB {
         // Acquire the lock, get the entry and clone the value.
         let state = self.shared.tasks.lock().unwrap();
         match state.entries.get(name).cloned() {
-            Some(task) => return Ok(task),
-            None => return Err(CWError::new("Not found", "No task found with this name")),
+            Some(task) => Ok(task),
+            None => Err(CWError::new("Not found", "No task found with this name")),
         }
     }
-
 
     pub(crate) fn rearm_task(&self, name: &str, duration: Duration) -> Result<(), CWError> {
         let mut state = self.shared.tasks.lock().unwrap();
@@ -44,7 +43,12 @@ impl MemDB {
         Ok(())
     }
 
-    pub(crate) fn set_task(&self, name: String, command: Arc<dyn Command+ Send + Sync>, expire: u64) {
+    pub(crate) fn set_task(
+        &self,
+        name: String,
+        command: Arc<dyn Command + Send + Sync>,
+        expire: u64,
+    ) {
         let mut tasks = self.shared.tasks.lock().unwrap();
 
         let duration = Duration::new(expire, 0);
@@ -69,7 +73,9 @@ impl MemDB {
         // If there was a value previously associated with the key
         // The associated entry in the `expirations` map must also be removed.
         if let Some(prev) = prev {
-            tasks.expirations.remove(&(prev.runs_at, name.to_string().clone()));
+            tasks
+                .expirations
+                .remove(&(prev.runs_at, name.to_string().clone()));
         }
 
         println!("----- STATE -----");

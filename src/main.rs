@@ -1,30 +1,30 @@
-pub mod db;
-pub mod task;
-pub mod http;
-pub mod error;
-pub mod command;
-pub mod config;
+pub(crate) mod command;
+pub(crate) mod config;
+pub(crate) mod db;
+pub(crate) mod error;
+pub(crate) mod http;
+pub(crate) mod task;
 
-use error::CWError;
-use task::Status;
 use command::echo::Echo;
-use http::{User, validate_credentials, bad_request,unauthorized,forbidden,not_found};
+use error::CWError;
+use http::{bad_request, forbidden, not_found, unauthorized, validate_credentials, User};
+use task::Status;
 
 #[macro_use]
 extern crate rocket;
 
-use std::env;
-use std::process::exit;
-use std::sync::Arc;
-use std::time::Duration;
-use rocket::fs::{FileServer, relative};
+use rocket::fs::{relative, FileServer};
 use rocket::serde::json::Json;
 use rocket::serde::Serialize;
 use rocket::State;
 use rocket_basicauth::BasicAuth;
+use std::env;
+use std::process::exit;
+use std::sync::Arc;
+use std::time::Duration;
 
 #[derive(Serialize)]
-pub struct JobStatus {
+pub(crate) struct JobStatus {
     pub name: String,
     pub status: Status,
     pub expires_in: u64,
@@ -45,7 +45,12 @@ impl JobStatus {
 }
 
 #[get("/tasks/<name>/reset", format = "json")]
-fn reset_task(auth: BasicAuth, name: &str, db: &State<db::MemDB>, user: &State<User>) -> Result<Json<JobStatus>, CWError> {
+fn reset_task(
+    auth: BasicAuth,
+    name: &str,
+    db: &State<db::MemDB>,
+    user: &State<User>,
+) -> Result<Json<JobStatus>, CWError> {
     validate_credentials(auth, user.inner().clone())?;
 
     let duration = Duration::new(60, 0);
@@ -55,7 +60,12 @@ fn reset_task(auth: BasicAuth, name: &str, db: &State<db::MemDB>, user: &State<U
 }
 
 #[get("/tasks/<name>", format = "json")]
-fn get_task(auth: BasicAuth, name: &str, db: &State<db::MemDB>, user: &State<User>) -> Result<Json<JobStatus>, CWError> {
+fn get_task(
+    auth: BasicAuth,
+    name: &str,
+    db: &State<db::MemDB>,
+    user: &State<User>,
+) -> Result<Json<JobStatus>, CWError> {
     validate_credentials(auth, user.inner().clone())?;
 
     let task = db.get_task(name)?;
@@ -74,20 +84,19 @@ async fn main() -> Result<(), rocket::Error> {
 
     let db = db::MemDB::new();
 
-    let config: config::Config;
-    match config::load_config(args[0].to_string()) {
-        Ok(cfg) => { config = cfg }
+    let config: config::Config = match config::load_config(args[0].to_string()) {
+        Ok(cfg) => cfg,
         Err(e) => {
             eprintln!("Error: {}", e);
             exit(2);
         }
-    }
+    };
 
     println!("{}", config.task.name);
 
     db.set_task(
         config.task.name,
-        Arc::new(Echo{
+        Arc::new(Echo {
             args: config.task.command.args,
         }),
         config.task.timeout,
@@ -99,7 +108,10 @@ async fn main() -> Result<(), rocket::Error> {
     };
 
     let _rocket = rocket::build()
-        .register("/", catchers![bad_request,unauthorized,forbidden,not_found])
+        .register(
+            "/",
+            catchers![bad_request, unauthorized, forbidden, not_found],
+        )
         .mount("/", FileServer::from(relative!("static")))
         .mount("/api", routes![get_task])
         .mount("/api", routes![reset_task])

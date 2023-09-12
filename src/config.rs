@@ -1,7 +1,6 @@
-use std::fs;
-use std::error::Error;
 use serde::Deserialize;
-use toml::from_str;
+use std::error::Error;
+use std::fs;
 
 #[derive(Deserialize)]
 pub(crate) struct Config {
@@ -10,7 +9,7 @@ pub(crate) struct Config {
 }
 
 #[derive(Deserialize)]
-pub struct Auth {
+pub(crate) struct Auth {
     pub username: String,
     pub password: String,
 }
@@ -19,12 +18,11 @@ pub struct Auth {
 pub(crate) struct Task {
     pub name: String,
     pub timeout: u64,
-    pub command: Command, 
+    pub command: Command,
 }
 
 #[derive(Deserialize)]
 pub(crate) struct Command {
-    pub name: String,
     pub args: String,
 }
 

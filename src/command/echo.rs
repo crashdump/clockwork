@@ -1,12 +1,15 @@
 use crate::task::Command;
 
-pub struct Echo {
-    pub args: String,
+pub(crate) struct Echo {
+    pub(crate) args: String,
 }
 
-impl Command for Echo  {
-    fn name(&self) -> &'static str { "echo" }
+impl Command for Echo {
     fn run(&self) -> Result<String, String> {
-        Ok("sucesfully ran echo".to_string())
+        Ok(format!("echo: {}", self.args))
+    }
+
+    fn name(&self) -> &'static str {
+        "echo"
     }
 }
