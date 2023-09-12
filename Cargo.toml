@@ -21,3 +21,7 @@ strum = "0.25"
 strum_macros = "0.25"
 toml = "0.7"
 rocket-basicauth = "2"
+
+[profile.release]
+lto = true
+panic = "abort"

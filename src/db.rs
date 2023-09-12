@@ -144,7 +144,6 @@ async fn run_expired_tasks(shared: Arc<Shared>) {
             _ = shared.notify_task_runner.notified() => {}
             }
         } else {
-            println!("run_expired_tasks(): no task to run in the future.");
             shared.notify_task_runner.notified().await;
         }
     }

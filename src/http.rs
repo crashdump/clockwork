@@ -29,16 +29,15 @@ pub struct User {
 }
 
 pub fn validate_credentials(auth: BasicAuth, user: User) -> Result<(), CWError> {
+    if auth.username == user.username && auth.password == user.password {
+        return Ok(())
+    }
+
     if auth.username != user.username {
         println!("unknown user '{}'", auth.username);
         return Err(CWError::new("error", "invalid username or password."))
     }
     
-    match auth.username == user.username && auth.password == user.password {
-        true => Ok(()),
-        false => {
-            println!("invalid credentials for user '{}'", auth.username);
-            return Err(CWError::new("error", "invalid username or password."))
-        },
-    }
+    println!("invalid credentials for user '{}'", auth.username);
+    return Err(CWError::new("error", "invalid username or password."))
 }
