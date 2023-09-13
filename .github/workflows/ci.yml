@@ -1,6 +1,13 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    tags:
+      - '*'
+  pull_request:
+
+permissions:
+  contents: write
 
 jobs:
   tests:
@@ -53,3 +60,50 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
+
+  publish:
+    name: Publish for ${{ matrix.platforms.arch }}
+    runs-on: ${{ matrix.platforms.os }}
+    needs: [ tests, lints ]
+    if: startsWith(github.event.ref, 'refs/tags/')
+    strategy:
+      matrix:
+        platforms:
+          - { cross: true,  os: 'ubuntu-latest', arch: 'aarch64-unknown-linux-gnu', suffix: 'linux-arm64' }
+          - { cross: false, os: 'ubuntu-latest', arch: 'x86_64-unknown-linux-gnu', suffix: 'linux-x86_64' }
+         # - { cross: true,  os: 'ubuntu-latest', arch: 'i686-unknown-linux-gnu', suffix: 'linux-i686' }
+          - { cross: false, os: 'macOS-latest',  arch: 'x86_64-apple-darwin', suffix: 'darwin-x86_64' }
+          - { cross: true,  os: 'macOS-latest',  arch: 'aarch64-apple-darwin', suffix: 'darwin-arm64' }
+
+    env:
+      BIN_FILENAME: clockwork-${{ matrix.platforms.arch }}
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Run cargo build
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: build
+          args: --release
+          toolchain: stable
+          use-cross: ${{ matrix.platforms.cross }}
+          target: ${{ matrix.platforms.arch }}
+          strip: true
+
+      - name: Rename binary
+        run: mv target/${{ matrix.platforms.arch }}/release/clockwork /tmp/clockwork-${{ matrix.platforms.suffix }}
+
+      - name: Generate SHA-256
+        run: shasum -a 256 /tmp/clockwork-${{ matrix.platforms.suffix }} | cut -d ' ' -f 1 > /tmp/clockwork-${{ matrix.platforms.arch }}.sha256
+
+      - name: Release binary and SHA-256 checksum to GitHub
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          files: |
+            /tmp/clockwork-${{ matrix.platforms.suffix }}
+            /tmp/clockwork-${{ matrix.platforms.suffix }}.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
