@@ -19,7 +19,7 @@ serde_json = "1"
 rocket = { version = "=0.5.0-rc.3", features = ["json"] }
 strum = "0.25"
 strum_macros = "0.25"
-toml = "0.7"
+toml = "0.8"
 rocket-basicauth = "2"
 
 [profile.release]
