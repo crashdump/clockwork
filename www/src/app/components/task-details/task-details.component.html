@@ -1,0 +1,34 @@
+<mat-card class="task-detail-card">
+  <mat-card-header>
+    <mat-card-title>Task Details</mat-card-title>
+  </mat-card-header>
+
+  <mat-card-content>
+    <div *ngIf="task">
+      <div>
+        <label><b>Name: </b></label> {{task.name}}
+      </div>
+      <div>
+        <label><b>Status: </b></label> {{task.status}}
+      </div>
+      <div>
+        <label><b>Expires In: </b></label> {{task.expires_in}}
+      </div>
+      <div>
+        <label><b>Command: </b></label> {{task.command}}
+      </div>
+      <div>
+        <label><b>Result: </b></label> {{task.result}}
+      </div>
+    </div>
+    <mat-divider></mat-divider>
+  </mat-card-content>
+
+  <mat-card-actions>
+    <button *ngIf="task.expires_in == 0" (click)="rearmNotPossible()" class="btn btn-primary btn-warning">Re-arm</button>
+    <button *ngIf="task.expires_in != 0" (click)="rearmTask(task.name)" class="btn btn-primary btn-success">Re-arm</button>
+
+    <button (click)="navigateToTaskList()" class="btn btn-primary">Back</button>
+  </mat-card-actions>
+
+</mat-card>

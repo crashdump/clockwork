@@ -1,22 +1,22 @@
+use crate::error::Error;
+
 use serde::Serialize;
-use std::fmt::{Debug, Error, Formatter};
+use std::fmt::{Debug, Error as FmtError, Formatter};
 use std::sync::Arc;
 use strum_macros::{Display, EnumString, EnumVariantNames};
 use tokio::time::{Duration, Instant};
 
-use crate::error::CWError;
-
 #[derive(Serialize, Display, Copy, Clone, PartialEq, EnumString, EnumVariantNames)]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
-pub(crate) enum Status {
+pub(crate) enum TaskStatus {
     CountingDown,
     ActionSuccessful,
     ActionFailed,
 }
 
-impl Debug for Status {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+impl Debug for TaskStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "Status: {}", self)
     }
 }
@@ -24,7 +24,7 @@ impl Debug for Status {
 #[derive(Clone, Debug)]
 pub(crate) struct Task {
     // Status
-    pub status: Status,
+    pub status: TaskStatus,
     pub runs_at: Instant,
     // Action
     pub command: Arc<dyn Command + Send + Sync>,
@@ -35,7 +35,7 @@ impl Task {
     pub(crate) fn new(command: Arc<dyn Command + Send + Sync>, duration: Duration) -> Task {
         Task {
             // Status
-            status: Status::CountingDown,
+            status: TaskStatus::CountingDown,
             runs_at: Instant::now() + duration,
             // Action
             command,
@@ -48,12 +48,9 @@ impl Task {
         duration.as_secs()
     }
 
-    pub(crate) fn reset(&mut self, duration: Duration) -> Result<(), CWError> {
-        if self.status != Status::CountingDown {
-            return Err(CWError::new(
-                "Too late",
-                "You're too late, this clock has already reached zero. To re-arm, please restart the application.",
-            ));
+    pub(crate) fn reset(&mut self, duration: Duration) -> Result<(), Error> {
+        if self.status != TaskStatus::CountingDown {
+            return Err(Error::Forbidden("You're too late, this clock has already reached zero. To re-arm, please restart the application.".to_string()));
         }
         self.runs_at = Instant::now() + duration;
         Ok(())
@@ -63,11 +60,11 @@ impl Task {
         match self.command.run() {
             Err(e) => {
                 self.result = e;
-                self.status = Status::ActionFailed;
+                self.status = TaskStatus::ActionFailed;
             }
             Ok(r) => {
                 self.result = r;
-                self.status = Status::ActionSuccessful;
+                self.status = TaskStatus::ActionSuccessful;
             }
         }
 
@@ -81,7 +78,7 @@ pub(crate) trait Command {
 }
 
 impl Debug for dyn Command + Sync + Send {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "Command {{ Name: {} }}", self.name())
     }
 }

@@ -1,25 +1,59 @@
-use rocket::http::Status;
+use std::io::Cursor;
+use thiserror::Error;
 use rocket::response::Responder;
 use rocket::serde::Serialize;
-use rocket::{response, Request};
+use rocket::{response, Request, Response};
+use rocket::http::{ContentType, Status};
 
 #[derive(Serialize)]
-pub(crate) struct CWError {
-    pub status: String,
+pub(crate) struct APIError {
     pub reason: String,
 }
 
-impl CWError {
-    pub(crate) fn new(status: &str, reason: &str) -> CWError {
-        CWError {
-            status: status.to_string(),
-            reason: reason.to_string(),
-        }
-    }
+#[allow(dead_code)]
+#[derive(Error, Debug, Clone)]
+pub enum Error {
+    #[error("{0}")]
+    Internal(String),
+
+    #[error("{0}")]
+    NotFound(String),
+
+    #[error("{0}")]
+    BadRequest(String),
+
+    #[error("{0}")]
+    Forbidden(String),
+
+    #[error("{0}")]
+    Unauthorized(String),
 }
 
-impl<'r, 'o: 'r> Responder<'r, 'o> for CWError {
-    fn respond_to(self, req: &'r Request<'_>) -> response::Result<'o> {
-        Status::BadRequest.respond_to(req)
+
+impl Error {
+    fn get_http_status(&self) -> Status {
+        match self {
+            Error::Internal(_) => Status::InternalServerError,
+            Error::NotFound(_) => Status::NotFound,
+            Error::BadRequest(_) => Status::BadRequest,
+            Error::Forbidden(_) => Status::Forbidden,
+            Error::Unauthorized(_) => Status::Unauthorized,
+            _ => Status::BadRequest,
+        }
+    }
+
+}
+
+impl<'r> Responder<'r, 'static> for Error {
+    fn respond_to(self, _: &'r Request<'_>) -> response::Result<'static> {
+        let resp = serde_json::to_string(&APIError{
+            reason: self.to_string()
+        }).unwrap();
+
+        Response::build()
+            .status(self.get_http_status())
+            .header(ContentType::JSON)
+            .sized_body(resp.len(), Cursor::new(resp))
+            .ok()
     }
 }

@@ -4,6 +4,6 @@ password = "bar"
 
 [task]
 name = "test"
-timeout = 10
+timeout = 90
 command.name = "echo"
 command.args = "hello, world!"

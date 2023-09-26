@@ -1,16 +1,16 @@
 use crate::task::Command;
 
-pub(crate) struct Echo {
+pub(crate) struct Email {
     pub(crate) args: String,
 }
 
-impl Command for Echo {
+impl Command for Email {
     fn run(&self) -> Result<String, String> {
         Ok(format!("{}", self.args))
     }
 
     fn name(&self) -> &'static str {
-        "echo"
+        "email"
     }
 }
 
@@ -20,7 +20,7 @@ mod tests {
 
     #[test]
     fn runs() {
-        let echo = Echo {
+        let echo = Email {
             args: "foo".to_string(),
         };
         assert_eq!(echo.name(), "echo");

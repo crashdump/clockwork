@@ -1,10 +1,11 @@
+use crate::error::Error;
+use crate::http::User;
+use crate::task::{Command, Task};
+
 use std::collections::{BTreeSet, HashMap};
 use std::sync::{Arc, Mutex};
 use tokio::sync::Notify;
 use tokio::time::{self, Duration, Instant};
-
-use crate::error::CWError;
-use crate::task::{Command, Task};
 
 #[derive(Clone)]
 pub(crate) struct MemDB {
@@ -12,12 +13,13 @@ pub(crate) struct MemDB {
 }
 
 impl MemDB {
-    pub(crate) fn new() -> MemDB {
+    pub(crate) fn new(username: String, password: String) -> MemDB {
         let shared = Arc::new(Shared {
             tasks: Mutex::new(Tasks {
                 entries: HashMap::new(),
                 expirations: BTreeSet::default(),
             }),
+            user: User { username, password },
             notify_task_runner: Notify::new(),
         });
 
@@ -27,16 +29,22 @@ impl MemDB {
         MemDB { shared }
     }
 
-    pub(crate) fn get_task(&self, name: &str) -> Result<Task, CWError> {
+    pub(crate) fn list_tasks(&self) -> Vec<String> {
+        // Acquire the lock, get the entry and clone the value.
+        let state = self.shared.tasks.lock().unwrap();
+        Vec::from_iter(state.entries.keys().cloned())
+    }
+
+    pub(crate) fn get_task(&self, name: &str) -> Result<Task, Error> {
         // Acquire the lock, get the entry and clone the value.
         let state = self.shared.tasks.lock().unwrap();
         match state.entries.get(name).cloned() {
             Some(task) => Ok(task),
-            None => Err(CWError::new("Not found", "No task found with this name")),
+            None => Err(Error::NotFound("No task found with this name.".to_string())),
         }
     }
 
-    pub(crate) fn rearm_task(&self, name: &str, duration: Duration) -> Result<(), CWError> {
+    pub(crate) fn rearm_task(&self, name: &str, duration: Duration) -> Result<(), Error> {
         let mut state = self.shared.tasks.lock().unwrap();
         let task = state.entries.get_mut(name).unwrap();
         task.reset(duration)?;
@@ -89,11 +97,15 @@ impl MemDB {
             self.shared.notify_task_runner.notify_one();
         }
     }
+
+    pub(crate) fn get_user(&self) -> Result<User, Error> {
+        Ok(self.shared.user.clone())
+    }
 }
 
 struct Shared {
+    user: User,
     tasks: Mutex<Tasks>,
-
     notify_task_runner: tokio::sync::Notify,
 }
 

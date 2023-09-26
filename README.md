@@ -27,7 +27,7 @@ Then start the server
 
 Once the server runs, you can query the status of the process through its rest api, for example:
 
-    $ curl -H "Authorization: Basic [REDACTED]" http://127.0.0.1:8000/api/tasks/test
+    $ curl -H "Authorization: Basic [REDACTED]" http://127.0.0.1:8000/api/v1/tasks/test
 
     { 
       "name":"test",
@@ -40,7 +40,7 @@ Once the server runs, you can query the status of the process through its rest a
 
 another example, with a task having reached 0.
 
-    $ curl -H "Authorization: Basic [REDACTED]" http://127.0.0.1:8000/api/tasks/test
+    $ curl -H "Authorization: Basic [REDACTED]" http://127.0.0.1:8000/api/v1/tasks/test
 
     {
       "name":"test",
