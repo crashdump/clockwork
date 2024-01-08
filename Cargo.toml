@@ -20,7 +20,7 @@ rocket = { version = "=0.5.0", features = ["json"] }
 strum = "0.25"
 strum_macros = "0.25"
 toml = "0.8"
-rocket-basicauth = "2"
+rocket-basicauth = "3"
 thiserror = "1.0"
 
 [profile.release]
